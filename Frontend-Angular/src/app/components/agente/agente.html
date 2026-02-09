@@ -1,0 +1,130 @@
+<div class="admin-layout" [class.night-mode]="isNightMode">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Panel Admin</h2>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin" routerLinkActive="active">
+        <span class="icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+
+      <a routerLink="/usuarios" routerLinkActive="active">
+        <span class="icon">👥</span>
+        <span>Gestión de Usuarios</span>
+      </a>
+
+      <a routerLink="/agentes" routerLinkActive="active">
+        <span class="icon">🧑‍✈️</span>
+        <span>Control de Agentes</span>
+      </a>
+
+      <a routerLink="/reportes" routerLinkActive="active">
+        <span class="icon">📝</span>
+        <span>Reportes del Sistema</span>
+      </a>
+
+      <a routerLink="/estadisticas" routerLinkActive="active">
+        <span class="icon">📈</span>
+        <span>Estadísticas</span>
+      </a>
+
+      <a routerLink="/calendario" routerLinkActive="active">
+        <span class="icon">📅</span>
+        <span>Calendario</span>
+      </a>
+
+      <a routerLink="/comentarios" routerLinkActive="active">
+        <span class="icon">💬</span>
+        <span>Comentarios</span>
+      </a>
+
+      <a routerLink="/configuracion" routerLinkActive="active">
+        <span class="icon">⚙️</span>
+        <span>Configuración</span>
+      </a>
+
+      <a routerLink="/login" class="logout">
+        <span class="icon">🚪</span>
+        <span>Salir</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ===== CONTENIDO ===== -->
+  <main class="main-content">
+
+    <!-- ===== HEADER ===== -->
+    <header class="header">
+      <h2>Dashboard General</h2>
+
+      <button class="theme-toggle" (click)="toggleTheme()">
+        {{ isNightMode ? '☀️' : '🌙' }}
+      </button>
+    </header>
+
+    <!-- ===== ALERTA ===== -->
+    <div class="alerta" *ngIf="alertMessage">
+      {{ alertMessage }}
+    </div>
+
+    <!-- ===== GRÁFICOS ===== -->
+    <section class="charts-grid">
+      <div class="chart-card">
+        <h4>Infracciones por Agente</h4>
+        <canvas id="mainBarChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h4>Reportes Semanales</h4>
+        <canvas id="lineChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h4>Tipos de Infracción</h4>
+        <canvas id="pieChart"></canvas>
+      </div>
+    </section>
+
+    <!-- ===== TABLA ===== -->
+    <section class="table-section">
+      <h3>📋 Infracciones Recientes</h3>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Agente</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let inf of infracciones; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ inf.fecha }}</td>
+            <td>{{ inf.tipo }}</td>
+            <td>{{ inf.agente }}</td>
+            <td>
+              <span
+                class="status"
+                [ngClass]="{
+                  'pending': inf.estado === 'Pendiente',
+                  'validated': inf.estado === 'Validado'
+                }"
+              >
+                {{ inf.estado }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
