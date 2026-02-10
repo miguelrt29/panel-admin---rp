@@ -4,6 +4,7 @@
   background: #0a2540;
   padding: 24px 16px;
   height: 100vh;
+  min-height: auto;
 }
 
 .sidebar-header h2 {
@@ -26,7 +27,7 @@
 }
 
 .sidebar-nav a:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }
 

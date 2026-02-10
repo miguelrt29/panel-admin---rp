@@ -2,12 +2,38 @@
 /* ===============================
    CONTENEDOR GENERAL
 ================================ */
-
 .admin-container {
-  padding: 30px;
+  display: flex;
+  height: 100vh;        
   background: #f1f5f9;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;       /* 👈 evita scroll del body */
 }
+
+/* ===============================
+   CONTENIDO PRINCIPAL
+================================ */
+
+.admin-content {
+  flex: 1;
+  padding: 40px;
+  background: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;   
+}
+
+/* Limita el ancho del contenido sin tocar HTML */
+.admin-content > * {
+  width: 100%;
+  max-width: 1100px;
+}
+
+/* Espaciado entre secciones / cards */
+.admin-content .card {
+  margin-bottom: 36px;
+}
+
 
 /* ===============================
    TÍTULO PRINCIPAL
@@ -106,6 +132,30 @@
 }
 
 /* ===============================
+   ESTADO INICIAL (PANTALLA NO VACÍA)
+================================ */
+
+.estado-inicial {
+  text-align: center;
+  padding: 70px 40px;
+  color: #475569;
+}
+
+.estado-inicial h2 {
+  font-size: 22px;
+  margin-bottom: 14px;
+  color: #0b1c2d;
+}
+
+.estado-inicial p {
+  font-size: 15px;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+
+/* ===============================
    INFORMACIÓN DEL AGENTE
 ================================ */
 
@@ -122,6 +172,13 @@
   font-size: 14px;
   color: #0f172a;
   font-weight: 600;
+
+  /* CLAVE */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
 }
 
 /* ===============================
@@ -129,13 +186,14 @@
 ================================ */
 
 .estado {
-  padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
-  margin: 10px;
+  padding: 6px 12px;
+  white-space: nowrap;
 }
+
 
 .estado.disponible {
   background: #dcfce7;
