@@ -12,3 +12,41 @@ html, body {
 }
 
 
+/* ========================= */
+/* MODO OSCURO */
+/* ========================= */
+
+.dark-mode {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.dark-mode .card,
+.dark-mode .container,
+.dark-mode .sidebar {
+  background-color: #1e1e1e;
+}
+
+/* ========================= */
+/* MODO DALTONISMO */
+/* ========================= */
+
+.color-blind {
+  filter: grayscale(100%);
+}
+
+/* ========================= */
+/* TAMAÑO DE FUENTE */
+/* ========================= */
+
+.font-small {
+  font-size: 14px;
+}
+
+.font-normal {
+  font-size: 16px;
+}
+
+.font-large {
+  font-size: 20px;
+}

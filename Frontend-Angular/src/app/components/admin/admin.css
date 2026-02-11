@@ -28,8 +28,8 @@
 
 /* ===== CHARTS GRID ===== */
 .charts-grid {
-  display: grid;
-  grid-template-columns: 2fr 2fr 1.4fr;
+  display: flex;
+  justify-content: center;
   gap: 24px;
   margin-bottom: 36px;
 }

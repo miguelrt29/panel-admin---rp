@@ -1,0 +1,14 @@
+.config-container {
+  padding: 20px;
+  background: #f4f4f4;
+  border-radius: 10px;
+  max-width: 400px;
+}
+
+.option {
+  margin-bottom: 15px;
+}
+
+h2 {
+  margin-bottom: 20px;
+}

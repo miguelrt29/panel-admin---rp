@@ -4,39 +4,22 @@ import { SidebarAdmin } from './sidebar-admin/sidebar-admin';
 import { RouterModule } from '@angular/router';
 
 
+
+
 @Component({
   selector: 'app-admin',
+  standalone: true,
   templateUrl: './admin.html',
-  imports:[SidebarAdmin, RouterModule],
+  imports: [SidebarAdmin, RouterModule],
   styleUrls: ['./admin.css']
 })
 export class Admin implements AfterViewInit {
 
   ngAfterViewInit(): void {
-    this.createBarChart();
     this.createLineChart();
     this.createPieChart();
   }
 
-  private createBarChart(): void {
-    new Chart('mainBarChart', {
-      type: 'bar',
-      data: {
-        labels: ['Agente Gómez', 'Agente López', 'Agente Martínez', 'Agente Pérez'],
-        datasets: [{
-          label: 'Infracciones',
-          data: [18, 12, 9, 15],
-          backgroundColor: '#1e88e5'
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-  }
 
   private createLineChart(): void {
     new Chart('lineChart', {
@@ -73,4 +56,6 @@ export class Admin implements AfterViewInit {
       }
     });
   }
+
+
 }

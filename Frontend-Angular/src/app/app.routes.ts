@@ -18,6 +18,10 @@ import { Perfil } from './components/perfil/perfil';
 import { GestionAgentes } from './components/admin/gestion-agentes/gestion-agentes';
 import { Path } from 'leaflet';
 import { SidebarAdmin } from './components/admin/sidebar-admin/sidebar-admin';
+import { ConfigAdminComponent } from './components/admin/config-admin/config-admin';
+
+
+
 
 
 
@@ -38,5 +42,6 @@ export const routes: Routes = [
   {path: 'normas', component: Normas },
   {path: 'perfil', component: Perfil, canActivate: [authGuard] },
   {path: 'gestion-agentes', component: GestionAgentes},
-  {path: 'sidebar-admin', component: SidebarAdmin}
+  {path: 'sidebar-admin', component: SidebarAdmin},
+  {path: 'config-admin', component: ConfigAdminComponent}
 ];
