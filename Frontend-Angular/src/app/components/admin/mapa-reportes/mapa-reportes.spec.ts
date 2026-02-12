@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MapaReportes } from './mapa-reportes';
+import { MapaReportesComponent } from './mapa-reportes';
 
 describe('MapaReportes', () => {
-  let component: MapaReportes;
-  let fixture: ComponentFixture<MapaReportes>;
+  let component: MapaReportesComponent;
+  let fixture: ComponentFixture<MapaReportesComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MapaReportes]
+      imports: [MapaReportesComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(MapaReportes);
+    fixture = TestBed.createComponent(MapaReportesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

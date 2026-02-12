@@ -1,8 +1,12 @@
 import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';
+import { SidebarAdmin } from '../sidebar-admin/sidebar-admin';
+
 
 @Component({
   selector: 'app-config-admin',
   templateUrl: './config-admin.html',
+  imports:[RouterModule,SidebarAdmin],
   styleUrls: ['./config-admin.css']
 })
 export class ConfigAdminComponent {

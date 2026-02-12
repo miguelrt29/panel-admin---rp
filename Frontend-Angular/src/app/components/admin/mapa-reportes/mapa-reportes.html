@@ -1,1 +1,49 @@
-<p>mapa-reportes works!</p>
+<div class="admin-container">
+
+  <!-- Header -->
+  <div class="admin-header">
+    <div>
+      <h1>Centro de Control Vial</h1>
+      <p>Monitoreo y gestión de reportes ciudadanos</p>
+    </div>
+
+    <button (click)="actualizarSimulado()">
+      Actualizar
+    </button>
+  </div>
+
+  <!-- Resumen rápido -->
+  <div class="stats-grid">
+    <div class="stat-card pendiente">
+      <h3>Pendientes</h3>
+      <span>{{ totalPendientes }}</span>
+    </div>
+
+    <div class="stat-card proceso">
+      <h3>En Proceso</h3>
+      <span>{{ totalEnProceso }}</span>
+    </div>
+
+    <div class="stat-card resuelto">
+      <h3>Resueltos</h3>
+      <span>{{ totalResueltos }}</span>
+    </div>
+
+    <div class="stat-card total">
+      <h3>Total Hoy</h3>
+      <span>{{ totalPendientes + totalEnProceso + totalResueltos }}</span>
+    </div>
+  </div>
+
+  <!-- Mapa -->
+  <div class="map-card">
+    <div class="map-header">
+      <h2>Mapa de Reportes</h2>
+      <span>Vista Satelital Activa</span>
+    </div>
+
+    <!-- 🔴 ESTE ES EL MAPA, NO SE TOCA -->
+    <div id="map"></div>
+  </div>
+
+</div>
