@@ -1,6 +1,8 @@
-import { AfterViewInit, OnInit, Component } from '@angular/core';
+import { AfterViewInit, OnInit, OnDestroy, Component, NgZone } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
+import { SidebarAdmin } from '../sidebar-admin/sidebar-admin';
 
 interface Reporte {
   id: number;
@@ -8,9 +10,11 @@ interface Reporte {
   descripcion: string;
   latitud: number;
   longitud: number;
-  fecha: Date;
+  fecha: Date | string;
   estado: 'pendiente' | 'en_proceso' | 'resuelto';
   agente?: string;
+  foto?: string;
+  direccion?: string;
 }
 
 @Component({
@@ -18,225 +22,184 @@ interface Reporte {
   standalone: true,
   templateUrl: './mapa-reportes.html',
   styleUrls: ['./mapa-reportes.css'],
-  imports: [RouterModule]
+  imports: [RouterModule, CommonModule, SidebarAdmin]
 })
-export class MapaReportesComponent implements AfterViewInit, OnInit {
+export class MapaReportesComponent implements AfterViewInit, OnInit, OnDestroy {
 
   private map!: L.Map;
   private markersLayer = L.layerGroup();
-  private intervaloAutomatico!: any;
+  private socket?: WebSocket;
+  private mapaListo = false;
 
-  private reportes: Reporte[] = [
-    {
-      id: 1,
-      tipo: 'Vehículo mal estacionado',
-      descripcion: 'Vehículo bloqueando paso peatonal',
-      latitud: 4.5339,
-      longitud: -75.6811,
-      fecha: new Date(),
-      estado: 'pendiente'
-    },
-    {
-      id: 2,
-      tipo: 'Accidente leve',
-      descripcion: 'Choque entre motocicleta y automóvil',
-      latitud: 4.5355,
-      longitud: -75.6820,
-      fecha: new Date(),
-      estado: 'en_proceso',
-      agente: 'Unidad 204'
-    }
+  reportes: Reporte[] = [];
+
+  pendientes = 0;
+  enProceso = 0;
+  resueltos = 0;
+
+  reporteSeleccionado?: Reporte;
+  mostrarDetalle = false;
+
+  private modoDemo = false;
+  private intervaloNuevos?: any;
+  private intervaloCambios?: any;
+
+  private agentesDemo = [
+    'Unidad Móvil 12','Patrulla Vial 7','Agente Ramírez','Agente Torres','Grúa Municipal','Motorizado 3'
   ];
 
-  constructor(private router: Router) {}
-
-  // ======================================
-  // 🚀 INICIO AUTOMÁTICO
-  // ======================================
+  constructor(private router: Router, private zone: NgZone) {}
 
   ngOnInit(): void {
-    this.intervaloAutomatico = setInterval(() => {
-      this.generarReporteAutomatico();
-    }, 10000);
+    this.cargarReportesIniciales();
+    this.escucharTiempoReal();
   }
 
   ngAfterViewInit(): void {
-    this.initMap();
-    this.loadReportes();
+    setTimeout(() => {
+      this.initMap();
+      setTimeout(()=> this.map.invalidateSize(), 300);
+    });
   }
 
-  // ======================================
-  // 🔢 CONTADORES DINÁMICOS
-  // ======================================
-
-  get totalPendientes(): number {
-    return this.reportes.filter(r => r.estado === 'pendiente').length;
+  ngOnDestroy(): void {
+    if (this.socket) this.socket.close();
+    if (this.intervaloNuevos) clearInterval(this.intervaloNuevos);
+    if (this.intervaloCambios) clearInterval(this.intervaloCambios);
   }
 
-  get totalEnProceso(): number {
-    return this.reportes.filter(r => r.estado === 'en_proceso').length;
+  private cargarReportesIniciales(): void {
+    fetch('http://localhost:3000/reportes')
+      .then(res => res.json())
+      .then((data: Reporte[]) => {
+        this.reportes = data.map(r => ({...r, fecha: new Date(r.fecha)}));
+        this.actualizarContadores();
+        if (this.mapaListo) this.refrescarMapa();
+      })
+      .catch(() => this.activarSimulador());
   }
 
-  get totalResueltos(): number {
-    return this.reportes.filter(r => r.estado === 'resuelto').length;
+  private escucharTiempoReal(): void {
+    try {
+      this.socket = new WebSocket('ws://localhost:3000');
+      this.socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.tipo === 'nuevo_reporte') this.agregarReporte(data.reporte);
+        if (data.tipo === 'actualizar_reporte') this.actualizarReporte(data.reporte);
+      };
+      this.socket.onclose = () => this.activarSimulador();
+    } catch { this.activarSimulador(); }
   }
 
-  // ======================================
-  // 🗺 MAPA
-  // ======================================
+  private agregarReporte(reporte: Reporte): void {
+    reporte.fecha = new Date(reporte.fecha);
+    this.reportes.push(reporte);
+    if (this.mapaListo) this.crearMarcador(reporte);
+    this.actualizarContadores();
+  }
+
+  private actualizarReporte(reporteActualizado: Reporte): void {
+    const index = this.reportes.findIndex(r => r.id === reporteActualizado.id);
+    if (index === -1) return;
+    reporteActualizado.fecha = new Date(reporteActualizado.fecha);
+    this.reportes[index] = reporteActualizado;
+    if (this.mapaListo) this.refrescarMapa();
+    this.actualizarContadores();
+  }
+
+  private actualizarContadores(): void {
+    this.pendientes = this.reportes.filter(r => r.estado === 'pendiente').length;
+    this.enProceso = this.reportes.filter(r => r.estado === 'en_proceso').length;
+    this.resueltos = this.reportes.filter(r => r.estado === 'resuelto').length;
+  }
 
   private initMap(): void {
-    this.map = L.map('map', {
-      center: [4.5339, -75.6811],
-      zoom: 15
-    });
+    this.map = L.map('map',{center:[4.5339,-75.6811],zoom:15});
 
-    const satelliteLayer = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles © Esri' }
-    );
+    const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+    const etiquetas = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
 
-    satelliteLayer.addTo(this.map);
+    satelite.addTo(this.map);
+    etiquetas.addTo(this.map);
     this.markersLayer.addTo(this.map);
 
     this.mostrarUbicacionActual();
+    this.mapaListo = true;
+    this.refrescarMapa();
   }
 
   private mostrarUbicacionActual(): void {
     if (!navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(position => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-
-      this.map.setView([lat, lng], 17);
-
-      L.circleMarker([lat, lng], {
-        radius: 8,
-        fillColor: '#007bff',
-        color: '#ffffff',
-        weight: 2,
-        fillOpacity: 1
-      })
-      .addTo(this.map)
-      .bindPopup('<strong>Estás aquí</strong>');
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat=pos.coords.latitude,lng=pos.coords.longitude;
+      L.circleMarker([lat,lng],{radius:8,fillColor:'#007bff',color:'#fff',weight:2,fillOpacity:1})
+      .addTo(this.map).bindPopup('<b>Tu ubicación</b>');
     });
   }
 
-  private loadReportes(): void {
-    this.clearMarkers();
-    this.reportes.forEach(r => this.addMarker(r));
+  private refrescarMapa(): void {
+    this.markersLayer.clearLayers();
+    this.reportes.forEach(r=>this.crearMarcador(r));
   }
 
-  private addMarker(reporte: Reporte): void {
+  private crearMarcador(reporte: Reporte): void {
+    const marker=L.circleMarker([reporte.latitud,reporte.longitud],{
+      radius:8,fillColor:this.getColorEstado(reporte.estado),color:'#fff',weight:2,fillOpacity:1
+    });
 
-    const marker = L.circleMarker(
-      [reporte.latitud, reporte.longitud],
-      {
-        radius: 8,
-        fillColor: this.getColorPorEstado(reporte.estado),
-        color: '#ffffff',
-        weight: 2,
-        fillOpacity: 1
-      }
-    );
+    const div=document.createElement('div');
+    div.innerHTML=`<b>${reporte.tipo}</b><br>${new Date(reporte.fecha).toLocaleTimeString()}<br><button class='detalle-btn'>Ver detalles</button>`;
 
-    let estadoTexto = '';
-    let agenteTexto = '';
+    const btn=div.querySelector('.detalle-btn') as HTMLButtonElement;
+    btn.onclick=()=>this.zone.run(()=>this.abrirDetalle(reporte));
 
-    switch (reporte.estado) {
-      case 'pendiente':
-        estadoTexto = 'Pendiente de atención';
-        agenteTexto = 'Pendiente de asignación';
-        break;
-
-      case 'en_proceso':
-        estadoTexto = 'En atención';
-        agenteTexto = reporte.agente || 'Asignando unidad...';
-        break;
-
-      case 'resuelto':
-        estadoTexto = 'Caso cerrado';
-        agenteTexto = `Atendido por ${reporte.agente}`;
-        break;
-    }
-
-    marker.bindPopup(`
-      <div style="font-family: Arial; min-width:240px;">
-        <h3 style="margin-bottom:5px;">${reporte.tipo}</h3>
-        <p>${reporte.descripcion}</p>
-
-        <hr style="margin:8px 0;">
-
-        <strong>Ubicación exacta:</strong><br>
-        ${reporte.latitud.toFixed(5)}, ${reporte.longitud.toFixed(5)}<br><br>
-
-        <strong>Fecha y hora:</strong><br>
-        ${reporte.fecha.toLocaleString()}<br><br>
-
-        <strong>Estado:</strong> ${estadoTexto}<br>
-        <strong>Unidad asignada:</strong> ${agenteTexto}
-      </div>
-    `);
+    marker.bindPopup(div);
+    marker.on('click',()=>this.map.flyTo([reporte.latitud,reporte.longitud],17,{duration:0.5}));
 
     marker.addTo(this.markersLayer);
   }
 
-  private getColorPorEstado(estado: string): string {
-    switch (estado) {
-      case 'pendiente': return '#ffc107';
-      case 'en_proceso': return '#fd7e14';
-      case 'resuelto': return '#28a745';
-      default: return '#6c757d';
+  private getColorEstado(estado:string):string{
+    switch(estado){
+      case 'pendiente':return '#ffc107';
+      case 'en_proceso':return '#fd7e14';
+      case 'resuelto':return '#28a745';
+      default:return '#6c757d';
     }
   }
 
-  private clearMarkers(): void {
-    this.markersLayer.clearLayers();
+  abrirDetalle(reporte:Reporte):void{
+    this.reporteSeleccionado=reporte;
+    this.mostrarDetalle=true;
   }
 
-  navegarADetalle(id: number): void {
-    this.router.navigate(['/admin/reporte', id]);
+  cerrarDetalle():void{
+    this.mostrarDetalle=false;
+    this.reporteSeleccionado=undefined;
   }
 
-  // ======================================
-  // 🔄 GENERACIÓN AUTOMÁTICA
-  // ======================================
-
-  private generarReporteAutomatico(): void {
-
-    const estados: Reporte['estado'][] = ['pendiente', 'en_proceso', 'resuelto'];
-    const estadoSeleccionado = estados[Math.floor(Math.random() * estados.length)];
-
-    const agentes = [
-      'Agente Martínez',
-      'Oficial Ramírez',
-      'Unidad 204',
-      'Unidad 315'
-    ];
-
-    let agenteAsignado: string | undefined;
-
-    if (estadoSeleccionado === 'en_proceso' || estadoSeleccionado === 'resuelto') {
-      agenteAsignado = agentes[Math.floor(Math.random() * agentes.length)];
-    }
-
-    const nuevoReporte: Reporte = {
-      id: Date.now(),
-      tipo: 'Incidente Vial',
-      descripcion: 'Evento generado automáticamente',
-      latitud: 4.5339 + (Math.random() - 0.5) * 0.01,
-      longitud: -75.6811 + (Math.random() - 0.5) * 0.01,
-      fecha: new Date(),
-      estado: estadoSeleccionado,
-      agente: agenteAsignado
-    };
-
-    this.reportes.push(nuevoReporte);
-    this.loadReportes();
+  navegarADetalle(id:number):void{
+    this.router.navigate(['/admin/reporte',id]);
   }
 
-  actualizarSimulado(): void {
-    this.generarReporteAutomatico();
+  private activarSimulador():void{
+    if(this.modoDemo) return; this.modoDemo=true;
+    this.intervaloNuevos=setInterval(()=>this.agregarReporte(this.generarReporteFake()),4500);
+    this.intervaloCambios=setInterval(()=>this.simularCambioEstado(),6000);
+  }
+
+  private generarReporteFake():Reporte{
+    const tipos=['Accidente de tránsito','Semáforo dañado','Vehículo abandonado','Congestión vial','Hueco peligroso','Inundación'];
+    const latBase=4.5339,lngBase=-75.6811;
+    return{ id:Date.now(), tipo:tipos[Math.floor(Math.random()*tipos.length)], descripcion:'Demo', latitud:latBase+(Math.random()-0.5)*0.02, longitud:lngBase+(Math.random()-0.5)*0.02, fecha:new Date(), estado:'pendiente', direccion:'Ubicación simulada'};
+  }
+
+  private simularCambioEstado():void{
+    const candidatos=this.reportes.filter(r=>r.estado!=='resuelto');
+    if(!candidatos.length) return;
+    const r=candidatos[Math.floor(Math.random()*candidatos.length)];
+    if(r.estado==='pendiente'){r.estado='en_proceso';r.agente=this.agentesDemo[Math.floor(Math.random()*this.agentesDemo.length)];}
+    else r.estado='resuelto';
+    this.actualizarReporte(r);
   }
 }
