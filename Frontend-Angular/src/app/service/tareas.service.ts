@@ -1,48 +1,27 @@
 import { Injectable } from '@angular/core';
-import { Tarea } from '../models/tarea.model';
-import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TareasService {
+  private apiUrl = 'http://localhost:60523/agentes';
 
-  // 🔵 BASE DE DATOS TEMPORAL EN MEMORIA
-  private tareas: Tarea[] = [];
+  constructor(private http: HttpClient) {}
 
-  constructor() {}
-
-  // =========================
-  // ASIGNAR TAREA (SIMULADO)
-  // =========================
-  asignarTarea(tarea: Tarea): Observable<Tarea> {
-
-    const nuevaTarea: Tarea = {
-      ...tarea,
-      id: Date.now() // ID simulado único
-    };
-
-    this.tareas.push(nuevaTarea);
-
-    return of(nuevaTarea);
+  // Este nombre debe coincidir con el de la imagen 8
+  obtenerTareasPorAgente(placa: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${placa}`);
   }
 
-  // =========================
-  // OBTENER TAREAS POR AGENTE
-  // =========================
-  obtenerTareasPorAgente(placa: string): Observable<Tarea[]> {
-    return of(
-      this.tareas.filter(t => t.placaAgente === placa)
-    );
-  }
+asignarTarea(placa: string, tarea: any): Observable<any> {
+  // Ahora es un POST a la sub-ruta de tareas
+  return this.http.post(`http://localhost:60523/agentes/${placa}/tareas`, tarea);
+}
 
-  // =========================
-  // ELIMINAR TAREA (SIMULADO)
-  // =========================
-  eliminarTarea(id: number): Observable<boolean> {
-
-    this.tareas = this.tareas.filter(t => t.id !== id);
-
-    return of(true);
-  }
+eliminarTarea(idTarea: number): Observable<any> {
+  // Cambia el PUT por DELETE y usa la ruta de tareas
+  return this.http.delete(`http://localhost:60523/agentes/tareas/${idTarea}`);
+}
 }
